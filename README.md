@@ -17,13 +17,13 @@ npm start
 
 ```bash
 docker build \
-  --build-arg CLOUDSMITH_WORKSPACE=dmk-software-solutions \
-  --build-arg CLOUDSMITH_REPOSITORY=npm-docker-demo \
+  --build-arg CLOUDSMITH_WORKSPACE=cooke-industries \
+  --build-arg CLOUDSMITH_REPOSITORY=npm-demo \
   --build-arg CLOUDSMITH_API_KEY=your-api-key \
   --build-arg CLOUDSMITH_SERVICE=your-service-account \
   -t npm-demo:local .
 
-docker run -p 3000:3000 npm-demo:local
+docker run -p 3000:3000 docker.cloudsmith.io/cooke-industries/npm-demo/node-app-dev:3
 ```
 
 ## CI/CD
