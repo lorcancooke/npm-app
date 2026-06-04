@@ -1,0 +1,15 @@
+{
+  "name": "cloudsmith-npm-docker-demo",
+  "version": "1.0.0",
+  "description": "Cloudsmith NPM + Docker integration demo with Chainguard base images",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test test/app.test.js"
+  },
+  "dependencies": {
+    "caniuse-lite": "latest",
+    "express": "^4.22.1",
+    "knip": "latest"
+  }
+}

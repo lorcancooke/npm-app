@@ -1,0 +1,2 @@
+registry=https://npm.cloudsmith.io/OWNER/REPOSITORY/
+//npm.cloudsmith.io/OWNER/REPOSITORY/:_auth=BASE64_OF_USERNAME:API_KEY

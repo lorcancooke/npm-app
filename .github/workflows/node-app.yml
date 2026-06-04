@@ -1,0 +1,70 @@
+name: Node.js application
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  id-token: write # Necessary to use OIDC for authentication
+  actions: write  # Necessary to cancel workflow executions
+  contents: read  # Necessary to read the repository contents
+
+env:
+  CLOUDSMITH_SERVICE: gh-actions # The slug/id for the Cloudsmith Service Account
+  CLOUDSMITH_WORKSPACE: dmk-software-solutions # The slug/id for the Cloudsmith workspace
+  CLOUDSMITH_REPOSITORY:  # The slug/id for the Cloudsmith Repository
+
+jobs:
+  build-publish:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Auth to Cloudsmith with OIDC
+      uses: cloudsmith-io/cloudsmith-cli-action@v2
+      with:
+        oidc-namespace: ${{ env.CLOUDSMITH_WORKSPACE }}
+        oidc-service-slug: ${{ env.CLOUDSMITH_SERVICE }}
+        oidc-auth-only: 'true'
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Install dependencies via Cloudsmith
+      run: |
+        printf 'registry=https://npm.cloudsmith.io/%s/%s/\n' "$CLOUDSMITH_WORKSPACE" "$CLOUDSMITH_REPOSITORY" > .npmrc
+        printf '//npm.cloudsmith.io/%s/%s/:_authToken=%s\n' "$CLOUDSMITH_WORKSPACE" "$CLOUDSMITH_REPOSITORY" "$CLOUDSMITH_API_KEY" >> .npmrc
+        rm -f package-lock.json
+        npm install
+
+    - name: Run tests
+      run: |
+        npm test
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Docker Login to Cloudsmith
+      uses: docker/login-action@v3
+      with:
+        registry: docker.cloudsmith.io
+        username: ${{ env.CLOUDSMITH_SERVICE }}
+        password: ${{ env.CLOUDSMITH_API_KEY }}
+
+    - name: Push with Docker Client
+      run: |
+        docker build --platform linux/arm64 \
+          --build-arg CLOUDSMITH_SERVICE=${{ env.CLOUDSMITH_SERVICE }} \
+          --build-arg CLOUDSMITH_WORKSPACE=${{ env.CLOUDSMITH_WORKSPACE }} \
+          --build-arg CLOUDSMITH_REPOSITORY=${{ env.CLOUDSMITH_REPOSITORY }} \
+          --build-arg CLOUDSMITH_API_KEY=${{ env.CLOUDSMITH_API_KEY }} \
+          --build-arg BUILD_NUMBER=${{ github.run_number }} \
+          --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+          --build-arg GIT_SHA=${{ github.sha }} \
+          -t docker.cloudsmith.io/${{ env.CLOUDSMITH_WORKSPACE }}/${{ env.CLOUDSMITH_REPOSITORY }}/node-app-dev:${{github.run_number}} .
+        docker push docker.cloudsmith.io/${{ env.CLOUDSMITH_WORKSPACE }}/${{ env.CLOUDSMITH_REPOSITORY }}/node-app-dev:${{github.run_number}}
