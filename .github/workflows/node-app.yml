@@ -12,7 +12,7 @@ permissions:
 env:
   CLOUDSMITH_SERVICE: gh-actions-gvq7 # The slug/id for the Cloudsmith Service Account
   CLOUDSMITH_WORKSPACE: cooke-industries # The slug/id for the Cloudsmith workspace
-  CLOUDSMITH_REPOSITORY: npn-demo # The slug/id for the Cloudsmith Repository
+  CLOUDSMITH_REPOSITORY: npm-demo # The slug/id for the Cloudsmith Repository
 
 jobs:
   build-publish:
