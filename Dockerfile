@@ -5,7 +5,7 @@ ARG CLOUDSMITH_REPOSITORY
 
 # ---------- Stage 1: Build with dev base image ----------
 
-FROM docker.cloudsmith.io/${CLOUDSMITH_WORKSPACE}/${CLOUDSMITH_REPOSITORY}/node:26-alpine-dev AS dev
+FROM docker.cloudsmith.io/${CLOUDSMITH_WORKSPACE}/${CLOUDSMITH_REPOSITORY}/node:26-alpine3.23-dev AS dev
 
 # DHI (Docker Hardened Images)
 # dhi.io/node:26-alpine-dev
@@ -35,7 +35,7 @@ COPY src/ ./src/
 
 # ---------- Stage 2: Final runtime image ----------
 
-FROM docker.cloudsmith.io/${CLOUDSMITH_WORKSPACE}/${CLOUDSMITH_REPOSITORY}/node:26-alpine-dev
+FROM docker.cloudsmith.io/${CLOUDSMITH_WORKSPACE}/${CLOUDSMITH_REPOSITORY}/node:26-alpine3.23
 
 # DHI (Docker Hardened Images)
 # dhi.io/node:26-alpine-dev
