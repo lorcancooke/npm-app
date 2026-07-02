@@ -12,7 +12,7 @@ permissions:
 env:
   CLOUDSMITH_SERVICE: gh-actions-gvq7 # The slug/id for the Cloudsmith Service Account
   CLOUDSMITH_WORKSPACE: cooke-industries # The slug/id for the Cloudsmith workspace
-  CLOUDSMITH_REPOSITORY: ryan-demo # The slug/id for the Cloudsmith Repository
+  CLOUDSMITH_REPOSITORY: lc-1 # The slug/id for the Cloudsmith Repository
 
 jobs:
   build-publish:
@@ -40,6 +40,7 @@ jobs:
         printf '//npm.cloudsmith.io/%s/%s/:_authToken=%s\n' "$CLOUDSMITH_WORKSPACE" "$CLOUDSMITH_REPOSITORY" "$CLOUDSMITH_API_KEY" >> .npmrc
         rm -f package-lock.json
         npm install
+        
 
     - name: Run tests
       run: |
