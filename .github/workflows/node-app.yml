@@ -12,7 +12,7 @@ permissions:
 env:
   CLOUDSMITH_SERVICE: gh-actions-gvq7 # The slug/id for the Cloudsmith Service Account
   CLOUDSMITH_WORKSPACE: cooke-industries # The slug/id for the Cloudsmith workspace
-  CLOUDSMITH_REPOSITORY: lc-3 # The slug/id for the Cloudsmith Repository
+  CLOUDSMITH_REPOSITORY: lc-4 # The slug/id for the Cloudsmith Repository
 
 jobs:
   build-publish:
