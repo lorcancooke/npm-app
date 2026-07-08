@@ -12,7 +12,7 @@ permissions:
 env:
   CLOUDSMITH_SERVICE: gh-actions-gvq7 # The slug/id for the Cloudsmith Service Account
   CLOUDSMITH_WORKSPACE: cooke-industries # The slug/id for the Cloudsmith workspace
-  CLOUDSMITH_REPOSITORY: abc # The slug/id for the Cloudsmith Repository
+  CLOUDSMITH_REPOSITORY: eg-npm-stage # The slug/id for the Cloudsmith Repository
 
 jobs:
   build-publish:
@@ -20,7 +20,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    #change here
 
     - name: Auth to Cloudsmith with OIDC
       uses: cloudsmith-io/cloudsmith-cli-action@v2
