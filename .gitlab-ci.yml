@@ -1,0 +1,85 @@
+# GitLab CI/CD — OIDC auth, single-job layout mirroring the GitHub Actions workflow.
+#
+# Prerequisite (one-time, in Cloudsmith), replaces GitHub's implicit OIDC trust:
+#   https://app.cloudsmith.com/cooke-industries/settings/authentication/openid
+#     - Provider URL:  https://gitlab.com
+#     - Required claim: sub = project_path:lorcancooke/npm-app:ref_type:branch:ref:main
+#     - Service account: the slug in CLOUDSMITH_SERVICE below, with push access to
+#                        vships-demo and pull access to the node base image repo.
+#
+# No stored secret. The Dockerfile is unchanged.
+
+variables:
+  CLOUDSMITH_SERVICE: gitlab-ka4h           # Cloudsmith service account slug (attach to the GitLab provider)
+  CLOUDSMITH_WORKSPACE: cooke-industries         # Cloudsmith workspace/org slug
+  CLOUDSMITH_REPOSITORY: npm-demo             # Cloudsmith repository slug
+  CLOUDSMITH_API_URL: https://api.cloudsmith.io
+
+# Mirrors `on: push: branches: [ "main" ]`
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+# Single job, same shape as the GitHub `build-publish` job.
+build-publish:
+  image: docker:27
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_CERT_PATH: "/certs/client"
+  # GitLab mints this JWT for the job (replaces GitHub's `permissions: id-token: write`)
+  id_tokens:
+    CLOUDSMITH_ID_TOKEN:
+      aud: "${CLOUDSMITH_API_URL}/openid/${CLOUDSMITH_WORKSPACE}"
+  script:
+    # --- Tooling: node for tests, curl/jq for the OIDC exchange ---
+    - apk add --no-cache nodejs npm curl jq
+
+    # --- Auth to Cloudsmith with OIDC (replaces cloudsmith-cli-action) ---
+    - |
+      echo "Authenticating to Cloudsmith via OIDC..."
+      CLOUDSMITH_API_KEY=$(curl -s -X POST \
+        -H "Content-Type: application/json" \
+        -d "{\"oidc_token\":\"${CLOUDSMITH_ID_TOKEN}\",\"service_slug\":\"${CLOUDSMITH_SERVICE}\"}" \
+        "${CLOUDSMITH_API_URL}/openid/${CLOUDSMITH_WORKSPACE}/" | jq -r '.token')
+      if [ -z "$CLOUDSMITH_API_KEY" ] || [ "$CLOUDSMITH_API_KEY" = "null" ]; then
+        echo "OIDC auth to Cloudsmith failed (check provider URL, claim, and service slug)"; exit 1
+      fi
+      export CLOUDSMITH_API_KEY
+
+    # --- Install dependencies via Cloudsmith ---
+    - |
+      printf 'registry=https://npm.cloudsmith.io/%s/%s/\n' \
+        "$CLOUDSMITH_WORKSPACE" "$CLOUDSMITH_REPOSITORY" > .npmrc
+      printf '//npm.cloudsmith.io/%s/%s/:_authToken=%s\n' \
+        "$CLOUDSMITH_WORKSPACE" "$CLOUDSMITH_REPOSITORY" "$CLOUDSMITH_API_KEY" >> .npmrc
+    - rm -f package-lock.json
+    - npm install
+
+    # --- Run tests ---
+    - npm test
+
+    # --- Set up QEMU + Buildx (replaces setup-qemu-action / setup-buildx-action) ---
+    - docker run --privileged --rm tonistiigi/binfmt --install arm64
+    - docker buildx create --use --name ci-builder
+    - docker buildx inspect --bootstrap
+
+    # --- Docker login to Cloudsmith ---
+    - echo "$CLOUDSMITH_API_KEY" | docker login docker.cloudsmith.io -u "$CLOUDSMITH_SERVICE" --password-stdin
+
+    # --- Build & push for linux/arm64 (buildx --push = build + push in one) ---
+    - |
+      IMAGE="docker.cloudsmith.io/${CLOUDSMITH_WORKSPACE}/${CLOUDSMITH_REPOSITORY}/node-app-dev:${CI_PIPELINE_IID}"
+      docker buildx build --platform linux/arm64 \
+        --build-arg CLOUDSMITH_SERVICE="${CLOUDSMITH_SERVICE}" \
+        --build-arg CLOUDSMITH_WORKSPACE="${CLOUDSMITH_WORKSPACE}" \
+        --build-arg CLOUDSMITH_REPOSITORY="${CLOUDSMITH_REPOSITORY}" \
+        --build-arg CLOUDSMITH_API_KEY="${CLOUDSMITH_API_KEY}" \
+        --build-arg BUILD_NUMBER="${CI_PIPELINE_IID}" \
+        --build-arg BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+        --build-arg GIT_SHA="${CI_COMMIT_SHA}" \
+        -t "$IMAGE" \
+        --push .
