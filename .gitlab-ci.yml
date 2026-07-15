@@ -7,7 +7,7 @@
 #     - Service account: the slug in CLOUDSMITH_SERVICE below, with push access to
 #                        vships-demo and pull access to the node base image repo.
 #
-# No stored secret. The Dockerfile is unchanged.
+
 
 variables:
   CLOUDSMITH_SERVICE: gitlab-ka4h           # Cloudsmith service account slug (attach to the GitLab provider)
