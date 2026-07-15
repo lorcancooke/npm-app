@@ -27,29 +27,13 @@ build-publish:
     # --- Tooling: node for tests, curl/jq for the OIDC exchange ---
     - apk add --no-cache nodejs npm curl jq
 
-    # --- Auth to Cloudsmith with OIDC (replaces cloudsmith-cli-action) ---
+    # --- Auth to Cloudsmith with OIDC ---
     - |
       echo "Authenticating to Cloudsmith via OIDC..."
-
-      # DEBUG 1: show the claims GitLab actually put in the token
-      # (JWT uses URL-safe base64 without padding, so fix both before decoding)
-      echo "--- token claims (aud / sub / iss) ---"
-      PAYLOAD=$(echo "$CLOUDSMITH_ID_TOKEN" | cut -d. -f2 | tr '_-' '/+')
-      case $((${#PAYLOAD} % 4)) in
-        2) PAYLOAD="${PAYLOAD}==";;
-        3) PAYLOAD="${PAYLOAD}=";;
-      esac
-      echo "$PAYLOAD" | base64 -d 2>/dev/null | jq '{aud, sub, iss}' || echo "could not decode token"
-      echo "--------------------------------------"
-
-      # DEBUG 2: capture and print the raw Cloudsmith response
-      RESPONSE=$(curl -s -X POST \
+      CLOUDSMITH_API_KEY=$(curl -s -X POST \
         -H "Content-Type: application/json" \
         -d "{\"oidc_token\":\"${CLOUDSMITH_ID_TOKEN}\",\"service_slug\":\"${CLOUDSMITH_SERVICE}\"}" \
-        "${CLOUDSMITH_API_URL}/openid/${CLOUDSMITH_WORKSPACE}/")
-      echo "Cloudsmith response: $RESPONSE"
-
-      CLOUDSMITH_API_KEY=$(echo "$RESPONSE" | jq -r '.token')
+        "${CLOUDSMITH_API_URL}/openid/${CLOUDSMITH_WORKSPACE}/" | jq -r '.token')
       if [ -z "$CLOUDSMITH_API_KEY" ] || [ "$CLOUDSMITH_API_KEY" = "null" ]; then
         echo "OIDC auth to Cloudsmith failed (check provider URL, claim, and service slug)"; exit 1
       fi
@@ -68,8 +52,11 @@ build-publish:
     - npm test
 
     # --- Set up QEMU + Buildx (replaces setup-qemu-action / setup-buildx-action) ---
+    # A named docker context is required: with dind TLS env vars set, buildx
+    # refuses to create a builder "from environment".
     - docker run --privileged --rm tonistiigi/binfmt --install arm64
-    - docker buildx create --use --name ci-builder
+    - docker context create ci-context
+    - docker buildx create --use --name ci-builder ci-context
     - docker buildx inspect --bootstrap
 
     # --- Docker login to Cloudsmith ---
