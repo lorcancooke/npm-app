@@ -1,12 +1,4 @@
-# GitLab CI/CD — OIDC auth, single-job layout mirroring the GitHub Actions workflow.
-#
-# Prerequisite (one-time, in Cloudsmith), replaces GitHub's implicit OIDC trust:
-#   https://app.cloudsmith.com/cooke-industries/settings/authentication/openid
-#     - Provider URL:  https://gitlab.com
-#     - Required claim: sub = project_path:lorcancooke/npm-app:ref_type:branch:ref:main
-#     - Service account: the slug in CLOUDSMITH_SERVICE below, with push access to
-#                        vships-demo and pull access to the node base image repo.
-#
+
 
 
 variables:
