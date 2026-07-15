@@ -32,8 +32,14 @@ build-publish:
       echo "Authenticating to Cloudsmith via OIDC..."
 
       # DEBUG 1: show the claims GitLab actually put in the token
+      # (JWT uses URL-safe base64 without padding, so fix both before decoding)
       echo "--- token claims (aud / sub / iss) ---"
-      echo "$CLOUDSMITH_ID_TOKEN" | cut -d. -f2 | base64 -d 2>/dev/null | jq '{aud, sub, iss}' || echo "could not decode token"
+      PAYLOAD=$(echo "$CLOUDSMITH_ID_TOKEN" | cut -d. -f2 | tr '_-' '/+')
+      case $((${#PAYLOAD} % 4)) in
+        2) PAYLOAD="${PAYLOAD}==";;
+        3) PAYLOAD="${PAYLOAD}=";;
+      esac
+      echo "$PAYLOAD" | base64 -d 2>/dev/null | jq '{aud, sub, iss}' || echo "could not decode token"
       echo "--------------------------------------"
 
       # DEBUG 2: capture and print the raw Cloudsmith response
