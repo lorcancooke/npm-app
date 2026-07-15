@@ -1,6 +1,3 @@
-
-
-
 variables:
   CLOUDSMITH_SERVICE: gitlab-ka4h           # Cloudsmith service account slug (attach to the GitLab provider)
   CLOUDSMITH_WORKSPACE: cooke-industries         # Cloudsmith workspace/org slug
@@ -33,10 +30,20 @@ build-publish:
     # --- Auth to Cloudsmith with OIDC (replaces cloudsmith-cli-action) ---
     - |
       echo "Authenticating to Cloudsmith via OIDC..."
-      CLOUDSMITH_API_KEY=$(curl -s -X POST \
+
+      # DEBUG 1: show the claims GitLab actually put in the token
+      echo "--- token claims (aud / sub / iss) ---"
+      echo "$CLOUDSMITH_ID_TOKEN" | cut -d. -f2 | base64 -d 2>/dev/null | jq '{aud, sub, iss}' || echo "could not decode token"
+      echo "--------------------------------------"
+
+      # DEBUG 2: capture and print the raw Cloudsmith response
+      RESPONSE=$(curl -s -X POST \
         -H "Content-Type: application/json" \
         -d "{\"oidc_token\":\"${CLOUDSMITH_ID_TOKEN}\",\"service_slug\":\"${CLOUDSMITH_SERVICE}\"}" \
-        "${CLOUDSMITH_API_URL}/openid/${CLOUDSMITH_WORKSPACE}/" | jq -r '.token')
+        "${CLOUDSMITH_API_URL}/openid/${CLOUDSMITH_WORKSPACE}/")
+      echo "Cloudsmith response: $RESPONSE"
+
+      CLOUDSMITH_API_KEY=$(echo "$RESPONSE" | jq -r '.token')
       if [ -z "$CLOUDSMITH_API_KEY" ] || [ "$CLOUDSMITH_API_KEY" = "null" ]; then
         echo "OIDC auth to Cloudsmith failed (check provider URL, claim, and service slug)"; exit 1
       fi
