@@ -1,7 +1,7 @@
 variables:
   CLOUDSMITH_SERVICE: gitlab-ka4h           # Cloudsmith service account slug (attach to the GitLab provider)
   CLOUDSMITH_WORKSPACE: cooke-industries         # Cloudsmith workspace/org slug
-  CLOUDSMITH_REPOSITORY: npm-gitlab-run            # Cloudsmith repository slug
+  CLOUDSMITH_REPOSITORY: optisantis           # Cloudsmith repository slug
   CLOUDSMITH_API_URL: https://api.cloudsmith.io
 
 # Mirrors `on: push: branches: [ "main" ]`
