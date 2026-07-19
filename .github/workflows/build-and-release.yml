@@ -1,4 +1,4 @@
-name: Node.js application
+name: build-and-release.yml
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
 env:
   CLOUDSMITH_SERVICE: gh-actions-gvq7 # The slug/id for the Cloudsmith Service Account
   CLOUDSMITH_WORKSPACE: cooke-industries # The slug/id for the Cloudsmith workspace
-  CLOUDSMITH_REPOSITORY: meesho-demo # The slug/id for the Cloudsmith Repository
+  CLOUDSMITH_REPOSITORY: test # The slug/id for the Cloudsmith Repository
 
 jobs:
   build-publish:
@@ -26,7 +26,7 @@ jobs:
       with:
         oidc-namespace: ${{ env.CLOUDSMITH_WORKSPACE }}
         oidc-service-slug: ${{ env.CLOUDSMITH_SERVICE }}
-        oidc-auth-only: 'true'
+        oidc-auth-only: 'false'
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -70,3 +70,8 @@ jobs:
           --build-arg GIT_SHA=${{ github.sha }} \
           -t docker.cloudsmith.io/${{ env.CLOUDSMITH_WORKSPACE }}/${{ env.CLOUDSMITH_REPOSITORY }}/node-app-dev:${{github.run_number}} .
         docker push docker.cloudsmith.io/${{ env.CLOUDSMITH_WORKSPACE }}/${{ env.CLOUDSMITH_REPOSITORY }}/node-app-dev:${{github.run_number}}
+    - name: Tag docker artifact as release
+      run: |
+        cloudsmith tag add \
+          $CLOUDSMITH_WORKSPACE/$CLOUDSMITH_REPOSITORY/node-app-dev:${{ github.run_number }} \
+          release
