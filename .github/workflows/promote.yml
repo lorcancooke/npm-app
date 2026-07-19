@@ -1,0 +1,34 @@
+name: Promote to prod
+on:
+  repository_dispatch:
+    types: [cloudsmith-promote]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  CLOUDSMITH_SERVICE: gh-actions-gvq7
+  CLOUDSMITH_WORKSPACE: cooke-industries
+  CLOUDSMITH_DEV_REPOSITORY: banking-teamx-dev
+  CLOUDSMITH_PROD_REPOSITORY: banking-teamx-prod
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Auth to Cloudsmith with OIDC
+      uses: cloudsmith-io/cloudsmith-cli-action@v2
+      with:
+        oidc-namespace: ${{ env.CLOUDSMITH_WORKSPACE }}
+        oidc-service-slug: ${{ env.CLOUDSMITH_SERVICE }}
+        oidc-auth-only: 'false'
+
+    - name: Copy artifact to prod, then remove promote tag
+      run: |
+        SLUG=$(cloudsmith ls pkg $CLOUDSMITH_WORKSPACE/$CLOUDSMITH_DEV_REPOSITORY \
+          -q "name:node-app-dev" -F json | jq -r '.data[0].slug')
+        cloudsmith copy $CLOUDSMITH_WORKSPACE/$CLOUDSMITH_DEV_REPOSITORY/$SLUG $CLOUDSMITH_PROD_REPOSITORY
+        cloudsmith tag rm $CLOUDSMITH_WORKSPACE/$CLOUDSMITH_DEV_REPOSITORY/$SLUG promote
