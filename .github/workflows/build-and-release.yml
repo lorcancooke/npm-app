@@ -72,6 +72,6 @@ jobs:
         docker push docker.cloudsmith.io/${{ env.CLOUDSMITH_WORKSPACE }}/${{ env.CLOUDSMITH_REPOSITORY }}/node-app-dev:${{github.run_number}}
     - name: Tag docker artifact as release
       run: |
-        cloudsmith tag add \
-          $CLOUDSMITH_WORKSPACE/$CLOUDSMITH_REPOSITORY/node-app-dev:${{ github.run_number }} \
-          release
+        SLUG=$(cloudsmith ls pkg $CLOUDSMITH_WORKSPACE/$CLOUDSMITH_REPOSITORY \
+        -q "name:node-app-dev" -F json | jq -r '.data[0].slug')
+        cloudsmith tag add $CLOUDSMITH_WORKSPACE/$CLOUDSMITH_REPOSITORY/$SLUG release
