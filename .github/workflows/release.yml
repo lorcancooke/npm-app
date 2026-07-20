@@ -10,7 +10,7 @@ permissions:
 env:
   CLOUDSMITH_SERVICE: gh-actions-gvq7
   CLOUDSMITH_WORKSPACE: cooke-industries
-  CLOUDSMITH_REPOSITORY: banking-teamx-dev
+  CLOUDSMITH_REPOSITORY: test
 
 jobs:
   validate-and-promote-tag:
