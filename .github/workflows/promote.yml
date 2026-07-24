@@ -1,7 +1,7 @@
 name: Promote to prod
 on:
   repository_dispatch:
-    types: [cloudsmith-promote]
+    types: [cloudsmith-release]
 
 permissions:
   id-token: write
@@ -10,7 +10,7 @@ permissions:
 env:
   CLOUDSMITH_SERVICE: gh-actions-gvq7
   CLOUDSMITH_WORKSPACE: cooke-industries
-  CLOUDSMITH_DEV_REPOSITORY: banking-teamx-dev
+  CLOUDSMITH_DEV_REPOSITORY: test
   CLOUDSMITH_PROD_REPOSITORY: banking-teamx-prod
 
 jobs:
@@ -26,9 +26,22 @@ jobs:
         oidc-service-slug: ${{ env.CLOUDSMITH_SERVICE }}
         oidc-auth-only: 'false'
 
-    - name: Copy artifact to prod, then remove promote tag
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Install deps + run tests (promotion gate)
+      run: |
+        printf 'registry=https://npm.cloudsmith.io/%s/%s/\n' "$CLOUDSMITH_WORKSPACE" "$CLOUDSMITH_DEV_REPOSITORY" > .npmrc
+        printf '//npm.cloudsmith.io/%s/%s/:_authToken=%s\n' "$CLOUDSMITH_WORKSPACE" "$CLOUDSMITH_DEV_REPOSITORY" "$CLOUDSMITH_API_KEY" >> .npmrc
+        rm -f package-lock.json
+        npm install
+        npm test
+
+    - name: On pass — copy to prod + tag promote
       run: |
         SLUG=$(cloudsmith ls pkg $CLOUDSMITH_WORKSPACE/$CLOUDSMITH_DEV_REPOSITORY \
           -q "name:node-app-dev" -F json | jq -r '.data[0].slug')
         cloudsmith copy $CLOUDSMITH_WORKSPACE/$CLOUDSMITH_DEV_REPOSITORY/$SLUG $CLOUDSMITH_PROD_REPOSITORY
-        cloudsmith tag rm $CLOUDSMITH_WORKSPACE/$CLOUDSMITH_DEV_REPOSITORY/$SLUG promote
+        cloudsmith tag add $CLOUDSMITH_WORKSPACE/$CLOUDSMITH_DEV_REPOSITORY/$SLUG promote
