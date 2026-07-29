@@ -10,8 +10,8 @@ permissions:
 env:
   CLOUDSMITH_SERVICE: gh-actions-gvq7
   CLOUDSMITH_WORKSPACE: cooke-industries
-  CLOUDSMITH_DEV_REPOSITORY: test
-  CLOUDSMITH_PROD_REPOSITORY: banking-teamx-prod
+  CLOUDSMITH_DEV_REPOSITORY: promotion-dev
+  CLOUDSMITH_PROD_REPOSITORY: promotion-prod
 #testing change here round 3
 jobs:
   promote:
