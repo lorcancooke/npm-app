@@ -12,7 +12,7 @@ env:
   CLOUDSMITH_WORKSPACE: cooke-industries
   CLOUDSMITH_DEV_REPOSITORY: test
   CLOUDSMITH_PROD_REPOSITORY: banking-teamx-prod
-#testing change here
+#testing change here round 2
 jobs:
   promote:
     runs-on: ubuntu-latest
