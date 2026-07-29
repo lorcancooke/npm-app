@@ -39,9 +39,11 @@ jobs:
         npm install
         npm test
 
-    - name: On pass — copy to prod + tag promote
+    - name: On pass — copy to prod + tag the prod copy
       run: |
         SLUG=$(cloudsmith ls pkg $CLOUDSMITH_WORKSPACE/$CLOUDSMITH_DEV_REPOSITORY \
           -q "name:node-app-dev" -F json | jq -r '.data[0].slug')
         cloudsmith copy $CLOUDSMITH_WORKSPACE/$CLOUDSMITH_DEV_REPOSITORY/$SLUG $CLOUDSMITH_PROD_REPOSITORY
-        cloudsmith tag add $CLOUDSMITH_WORKSPACE/$CLOUDSMITH_DEV_REPOSITORY/$SLUG promote
+        PROD_SLUG=$(cloudsmith ls pkg $CLOUDSMITH_WORKSPACE/$CLOUDSMITH_PROD_REPOSITORY \
+          -q "name:node-app-dev" -F json | jq -r '.data[0].slug')
+        cloudsmith tag add $CLOUDSMITH_WORKSPACE/$CLOUDSMITH_PROD_REPOSITORY/$PROD_SLUG promote
