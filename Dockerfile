@@ -5,7 +5,7 @@ ARG CLOUDSMITH_REPOSITORY
 
 # ---------- Stage 1: Build with dev base image ----------
 
-FROM docker.cloudsmith.io/${CLOUDSMITH_WORKSPACE}/${CLOUDSMITH_REPOSITORY}/cgr.dev/chainguard/node:latest AS dev
+FROM docker.cloudsmith.io/${CLOUDSMITH_WORKSPACE}/${CLOUDSMITH_REPOSITORY}/chainguard/node:latest-dev AS dev
 
 # DHI (Docker Hardened Images)
 # dhi.io/node:26-alpine-dev
@@ -35,7 +35,7 @@ COPY src/ ./src/
 
 # ---------- Stage 2: Final runtime image ----------
 
-FROM docker.cloudsmith.io/${CLOUDSMITH_WORKSPACE}/${CLOUDSMITH_REPOSITORY}/cgr.dev/chainguard/node:latest
+FROM docker.cloudsmith.io/${CLOUDSMITH_WORKSPACE}/${CLOUDSMITH_REPOSITORY}/chainguard/node:latest-dev
 
 # DHI (Docker Hardened Images)
 # dhi.io/node:26-alpine-dev
