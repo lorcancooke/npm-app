@@ -1,4 +1,4 @@
-name: Promote to prod
+name: step2-promote-to-prod
 on:
   repository_dispatch:
     types: [cloudsmith-release]
