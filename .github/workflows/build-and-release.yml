@@ -1,4 +1,4 @@
-name: build-and-release.yml
+name: step1-build-to-dev.yml
 
 on:
   push:
