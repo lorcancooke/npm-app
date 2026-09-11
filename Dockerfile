@@ -35,7 +35,7 @@ COPY src/ ./src/
 
 # ---------- Stage 2: Final runtime image ----------
 
-FROM docker.cloudsmith.io/${CLOUDSMITH_WORKSPACE}/${CLOUDSMITH_REPOSITORY}/chainguard/node:latest-dev
+FROM docker.cloudsmith.io/${CLOUDSMITH_WORKSPACE}/${CLOUDSMITH_REPOSITORY}/chainguard/node:latest
 
 # DHI (Docker Hardened Images)
 # dhi.io/node:26-alpine-dev
