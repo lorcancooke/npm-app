@@ -5,8 +5,7 @@ ARG CLOUDSMITH_REPOSITORY
 
 # ---------- Stage 1: Build with dev base image ----------
 
-FROM docker.cloudsmith.io/${CLOUDSMITH_WORKSPACE}/${CLOUDSMITH_REPOSITORY}/dhi/node:26-alpine-dev AS dev
-# DHI (Docker Hardened Images)
+FROM docker.cloudsmith.io/${CLOUDSMITH_WORKSPACE}/${CLOUDSMITH_REPOSITORY}/dhi/node:26-alpine3.24-dev AS dev # DHI (Docker Hardened Images)
 # dhi.io/node:26-alpine-dev
 
 # Chainguard
