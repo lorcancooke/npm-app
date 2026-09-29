@@ -1,78 +1,80 @@
-# step1-build-to-dev — Azure DevOps pipeline (Cloudsmith OIDC)
+# step1-build-to-dev — Azure DevOps pipeline (Cloudsmith OIDC, task v2)
 #
 # Prerequisites:
-#   - Cloudsmith Azure DevOps extension installed in your ADO org
-#   - Cloudsmith OIDC provider configured for this ADO org/project and mapped to the service account
-#   - Docker Registry service connection named 'cloudsmith-docker' -> docker.cloudsmith.io
- 
+#   - "Cloudsmith CLI Setup & Authenticate" extension installed in your ADO org
+#     (needs a version that supports exportAuthToken; update the extension if the input is rejected)
+#   - Cloudsmith OIDC provider: URL https://vstoken.dev.azure.com/<ORG_GUID>,
+#     claim aud = api://AzureADTokenExchange, mapped to the service account below
+
 trigger:
   branches:
     include:
       - main
- 
+
 pool:
   vmImage: ubuntu-latest
- 
+
 variables:
-  # ---- Cloudsmith settings ----
   CLOUDSMITH_WORKSPACE: 'cooke-industries'   # Cloudsmith workspace slug
   CLOUDSMITH_REPOSITORY: 'npm-app-dev'       # Cloudsmith repository slug
-  CLOUDSMITH_SERVICE: 'gh-actions-gvq7'      # Cloudsmith service account slug (consider an ADO-specific one)
-  imageName: 'node-app-dev'                  # Docker image name
- 
+  CLOUDSMITH_SERVICE: 'az-devops'            # Cloudsmith service account slug mapped to the ADO OIDC provider
+  imageName: 'node-app-dev'
+  registryHost: 'docker.cloudsmith.io'
+
 steps:
 - checkout: self
- 
-# Authenticate to Cloudsmith via OIDC and install the CLI
-- task: CloudsmithCliSetupAndAuthenticate@1
-  displayName: 'Cloudsmith: Authenticate via OIDC'
+
+# Install CLI + OIDC auth; exportAuthToken exposes the short-lived token as CLOUDSMITH_API_KEY for npm/docker
+- task: CloudsmithCliSetupAndAuthenticate@2
+  displayName: 'Cloudsmith: Set up CLI and authenticate via OIDC'
   inputs:
     authMethod: 'oidc'
-    oidcAuthOnly: false
-    pipInstall: false
-    cliVersion: ''
     oidcNamespace: '$(CLOUDSMITH_WORKSPACE)'
     oidcServiceSlug: '$(CLOUDSMITH_SERVICE)'
- 
+    verifyAuth: true
+    exportAuthToken: true
+  env:
+    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
 - task: UseNode@1
   displayName: Setup Node.js 22
   inputs:
     version: '22.x'
- 
+
 - script: |
     printf 'registry=https://npm.cloudsmith.io/%s/%s/\n' "$(CLOUDSMITH_WORKSPACE)" "$(CLOUDSMITH_REPOSITORY)" > .npmrc
-    printf '//npm.cloudsmith.io/%s/%s/:_authToken=%s\n' "$(CLOUDSMITH_WORKSPACE)" "$(CLOUDSMITH_REPOSITORY)" "$(CLOUDSMITH_API_KEY)" >> .npmrc
+    printf '//npm.cloudsmith.io/%s/%s/:_authToken=%s\n' "$(CLOUDSMITH_WORKSPACE)" "$(CLOUDSMITH_REPOSITORY)" "$CLOUDSMITH_API_KEY" >> .npmrc
     rm -f package-lock.json
     npm install
   displayName: Install dependencies via Cloudsmith
- 
+  env:
+    CLOUDSMITH_API_KEY: $(CLOUDSMITH_API_KEY)
+
 - script: npm test
   displayName: Run tests
- 
-# Remove credentials from the workspace so they aren't picked up by the Docker build context
+
+# Keep credentials out of the Docker build context
 - script: rm -f .npmrc
   displayName: Clean up .npmrc
- 
-# Compute build date (Docker@2 arguments can't run shell substitutions)
+
 - script: echo "##vso[task.setvariable variable=BUILD_DATE]$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   displayName: Set BUILD_DATE
- 
+
 # QEMU so the amd64 agent can build linux/arm64
 - script: docker run --privileged --rm tonistiigi/binfmt --install arm64
   displayName: Set up QEMU (arm64)
- 
-- task: Docker@2
-  displayName: Login to Cloudsmith
-  inputs:
-    command: login
-    containerRegistry: cloudsmith-docker
- 
+
+# Docker login using the OIDC-derived token (no service connection or stored secret)
+- script: echo "$CLOUDSMITH_API_KEY" | docker login $(registryHost) -u "$(CLOUDSMITH_SERVICE)" --password-stdin
+  displayName: Docker login to Cloudsmith
+  env:
+    CLOUDSMITH_API_KEY: $(CLOUDSMITH_API_KEY)
+
 - task: Docker@2
   displayName: Build Docker image
   inputs:
     command: build
-    containerRegistry: cloudsmith-docker
-    repository: $(CLOUDSMITH_WORKSPACE)/$(CLOUDSMITH_REPOSITORY)/$(imageName)
+    repository: $(registryHost)/$(CLOUDSMITH_WORKSPACE)/$(CLOUDSMITH_REPOSITORY)/$(imageName)
     Dockerfile: '**/Dockerfile'
     arguments: |
       --platform linux/arm64
@@ -85,19 +87,20 @@ steps:
       --build-arg GIT_SHA=$(Build.SourceVersion)
     tags: |
       $(Build.BuildId)
- 
+
 - task: Docker@2
   displayName: Push Docker image to Cloudsmith
   inputs:
     command: push
-    containerRegistry: cloudsmith-docker
-    repository: $(CLOUDSMITH_WORKSPACE)/$(CLOUDSMITH_REPOSITORY)/$(imageName)
+    repository: $(registryHost)/$(CLOUDSMITH_WORKSPACE)/$(CLOUDSMITH_REPOSITORY)/$(imageName)
     tags: |
       $(Build.BuildId)
- 
-# Tag the image version we just pushed as 'release'
+
+# CLI commands need SYSTEM_ACCESSTOKEN mapped on every step
 - script: |
     SLUG=$(cloudsmith ls pkg $(CLOUDSMITH_WORKSPACE)/$(CLOUDSMITH_REPOSITORY) \
       -q "name:$(imageName) version:$(Build.BuildId)" -F json | jq -r '.data[0].slug')
     cloudsmith tag add $(CLOUDSMITH_WORKSPACE)/$(CLOUDSMITH_REPOSITORY)/$SLUG release
   displayName: Tag docker artifact as release
+  env:
+    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
