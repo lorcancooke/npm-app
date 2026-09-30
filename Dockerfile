@@ -34,7 +34,7 @@ COPY src/ ./src/
 
 # ---------- Stage 2: Final runtime image ----------
 
-FROM node:26-alpine AS dev
+FROM node:26-alpine 
 # DHI (Docker Hardened Images)
 # dhi.io/node:26-alpine-dev
 
