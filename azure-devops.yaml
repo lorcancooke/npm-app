@@ -17,7 +17,7 @@ pool:
 variables:
   CLOUDSMITH_WORKSPACE: 'cooke-industries'   # Cloudsmith workspace slug
   CLOUDSMITH_REPOSITORY: 'npm-app-dev'       # Cloudsmith repository slug
-  CLOUDSMITH_SERVICE: 'az-devops'            # Cloudsmith service account slug mapped to the ADO OIDC provider
+  CLOUDSMITH_SERVICE: 'azure-devops-adcp'    # Cloudsmith service account slug mapped to the ADO OIDC provider
   imageName: 'node-app-dev'
   registryHost: 'docker.cloudsmith.io'
 
