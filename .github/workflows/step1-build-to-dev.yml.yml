@@ -40,6 +40,9 @@ jobs:
         printf '//npm.cloudsmith.io/%s/%s/:_authToken=%s\n' "$CLOUDSMITH_WORKSPACE" "$CLOUDSMITH_REPOSITORY" "$CLOUDSMITH_API_KEY" >> .npmrc
         rm -f package-lock.json
         npm install
+        npm ls next
+        
+
         
 
     - name: Run tests
