@@ -9,7 +9,6 @@
   },
   "dependencies":  {
     "express": "^4.22.1",
-    "knip": "latest",
-    "next": "15.2.2"
+    "knip": "latest"
   }
 }
