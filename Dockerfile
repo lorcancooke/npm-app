@@ -5,7 +5,7 @@ ARG CLOUDSMITH_REPOSITORY
 
 # ---------- Stage 1: Build with dev base image ----------
 
-FROM cgr.dev/chainguard/node:latest AS dev
+FROM node:26-alpine AS dev
 # DHI (Docker Hardened Images)
 # dhi.io/node:26-alpine-dev
 
@@ -34,7 +34,7 @@ COPY src/ ./src/
 
 # ---------- Stage 2: Final runtime image ----------
 
-FROM cgr.dev/chainguard/node:latest 
+FROM node:26-alpine
 # DHI (Docker Hardened Images)
 # dhi.io/node:26-alpine-dev
 
